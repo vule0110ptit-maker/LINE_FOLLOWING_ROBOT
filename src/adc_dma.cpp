@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <string.h>
-#include "drivers/adc_dma.h"
-#include "config/robot_setup.h"
+#include "adc_dma.h"
+#include "robot_setup.h"
 
 static_assert((ADC_RING_SIZE & (ADC_RING_SIZE - 1)) == 0, "ADC_RING_SIZE phai la luy thua cua 2");
 
@@ -60,7 +60,7 @@ void adc_dma_poll() {
     if (!s_dataReady) return;
     s_dataReady = false;
 
-    adc_continuous_data_t *result = nullptr;
+    adc_continuous_result_t *result = nullptr;
     if (!analogContinuousRead(&result, 0)) return;
 
     for (uint8_t k = 0; k < s_count; k++) {
