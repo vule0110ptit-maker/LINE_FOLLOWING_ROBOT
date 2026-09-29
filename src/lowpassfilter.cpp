@@ -1,5 +1,5 @@
-#include "control/lowpassfilter.h"
-#include "utils/math_utils.h"
+#include "lowpassfilter.h"
+#include "math_utils.h"
 
 void lp_init(LowPass *f, float cutoffHz, float sampleHz) {
     const float dt = 1.0f / sampleHz;

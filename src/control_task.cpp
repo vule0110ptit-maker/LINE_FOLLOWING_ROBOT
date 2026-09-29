@@ -1,16 +1,16 @@
 #include <Arduino.h>
-#include "systems/control_task.h"
-#include "systems/timer.h"
-#include "statemachine/fsm.h"
-#include "statemachine/states.h"
-#include "drivers/sensor_ir.h"
-#include "drivers/motor.h"
-#include "control/line_process.h"
-#include "control/pid.h"
-#include "control/lowpassfilter.h"
-#include "config/pin.h"
-#include "config/parameters.h"
-#include "config/robot_setup.h"
+#include "control_task.h"
+#include "timer.h"
+#include "fsm.h"
+#include "states.h"
+#include "sensor_ir.h"
+#include "motor.h"
+#include "line_process.h"
+#include "pid.h"
+#include "lowpassfilter.h"
+#include "pin.h"
+#include "parameters.h"
+#include "robot_setup.h"
 
 static RobotContext ctx;
 

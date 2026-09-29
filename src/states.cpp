@@ -1,12 +1,12 @@
 #include <Arduino.h>
-#include "statemachine/states.h"
-#include "statemachine/fsm.h"
-#include "utils/types.h"
-#include "config/parameters.h"
-#include "drivers/sensor_ir.h"
-#include "control/pid.h"
-#include "control/lowpassfilter.h"
-#include "drivers/motor.h"
+#include "states.h"
+#include "fsm.h"
+#include "types.h"
+#include "parameters.h"
+#include "sensor_ir.h"
+#include "pid.h"
+#include "lowpassfilter.h"
+#include "motor.h"
 
 // ---------------- IDLE: chờ bấm nút để calibrate ----------------
 static void idle_enter(RobotContext *) { motor_stop(); }

@@ -1,6 +1,6 @@
 #pragma once
 #include <stdint.h>
-#include "statemachine/fsm.h"
+#include "fsm.h"
 
 enum StateId : uint8_t {
     STATE_IDLE = 0,

@@ -1,6 +1,6 @@
 #pragma once
 #include <stdbool.h>
-#include "control/lowpassfilter.h"
+#include "lowpassfilter.h"
 
 // Bộ điều khiển PD (không có I)
 typedef struct {

@@ -1,5 +1,5 @@
 #pragma once
-#include "utils/types.h"
+#include "types.h"
 
 bool control_task_init();
 void control_task_run();                          // gọi liên tục trong loop(), tự chờ tick

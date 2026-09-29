@@ -1,8 +1,8 @@
 #include <Arduino.h>
-#include "drivers/motor.h"
-#include "config/pin.h"
-#include "config/robot_setup.h"
-#include "utils/math_utils.h"
+#include "motor.h"
+#include "pin.h"
+#include "robot_setup.h"
+#include "math_utils.h"
 
 namespace {
 

@@ -1,10 +1,10 @@
 #include <Arduino.h>
-#include "drivers/sensor_ir.h"
-#include "drivers/adc_dma.h"
-#include "config/pin.h"
-#include "config/robot_setup.h"
-#include "config/parameters.h"
-#include "utils/math_utils.h"
+#include "sensor_ir.h"
+#include "adc_dma.h"
+#include "pin.h"
+#include "robot_setup.h"
+#include "parameters.h"
+#include "math_utils.h"
 
 namespace {
 uint16_t s_raw[SENSOR_COUNT];

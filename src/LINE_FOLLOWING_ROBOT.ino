@@ -1,6 +1,6 @@
 #include <Arduino.h>
-#include "systems/control_task.h"
-#include "systems/timer.h"
+#include "control_task.h"
+#include "timer.h"
 
 // Bật khi cần tune. Serial USB có thể chặn nếu không có host -> làm trễ vòng điều khiển.
 #define DEBUG_TELEMETRY 0

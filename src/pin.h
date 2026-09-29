@@ -1,10 +1,9 @@
 #ifndef __PIN__H
 #define __PIN__H
 
-
 #pragma once
 #include <stdint.h>
-#include "config/robot_setup.h"
+#include "robot_setup.h"
 
 // ADC1 trên ESP32-S3 = GPIO1..GPIO10. Thứ tự: trái -> phải
 constexpr uint8_t IR_PINS[SENSOR_COUNT] = {1, 2, 3, 4, 5, 6, 7, 8};

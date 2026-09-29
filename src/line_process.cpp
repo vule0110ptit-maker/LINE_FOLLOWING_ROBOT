@@ -1,6 +1,6 @@
-#include "control/line_process.h"
-#include "config/robot_setup.h"
-#include "config/parameters.h"
+#include "line_process.h"
+#include "robot_setup.h"
+#include "parameters.h"
 
 namespace {
 int8_t s_lastSide = 1;

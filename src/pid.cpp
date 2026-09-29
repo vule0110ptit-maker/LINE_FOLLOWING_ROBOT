@@ -1,5 +1,5 @@
-#include "control/pid.h"
-#include "utils/math_utils.h"
+#include "pid.h"
+#include "math_utils.h"
 
 void pd_init(PD *p, float kp, float kd, float dCutoffHz, float sampleHz, float outLimit) {
     p->kp = kp;

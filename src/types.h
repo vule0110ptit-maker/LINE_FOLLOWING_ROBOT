@@ -1,11 +1,12 @@
 #pragma once
+
 #include <stdint.h>
 #include <stdbool.h>
-#include "config/robot_setup.h"
-#include "control/lowpassfilter.h"
-#include "control/pid.h"
-#include "control/line_process.h"
-#include "statemachine/fsm.h"
+#include "robot_setup.h"
+#include "lowpassfilter.h"
+#include "pid.h"
+#include "line_process.h"
+#include "fsm.h"
 
 // Dữ liệu dùng chung giữa control_task và các state
 struct RobotContext {

@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "statemachine/fsm.h"
+#include "fsm.h"
 
 void fsm_init(Fsm *f, const StateDef *table, uint8_t initial, RobotContext *ctx) {
     f->table   = table;
