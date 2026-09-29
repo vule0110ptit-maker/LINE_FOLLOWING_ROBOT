@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <string.h>
 #include "drivers/adc_dma.h"
-#include "config/robot_config.h"
+#include "config/robot_setup.h"
 
 static_assert((ADC_RING_SIZE & (ADC_RING_SIZE - 1)) == 0, "ADC_RING_SIZE phai la luy thua cua 2");
 
