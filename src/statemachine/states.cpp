@@ -6,6 +6,7 @@
 #include "drivers/sensor_ir.h"
 #include "control/pid.h"
 #include "control/lowpassfilter.h"
+#include "drivers/motor.h"
 
 // ---------------- IDLE: chờ bấm nút để calibrate ----------------
 static void idle_enter(RobotContext *) { motor_stop(); }

@@ -4,6 +4,7 @@
 #include "statemachine/fsm.h"
 #include "statemachine/states.h"
 #include "drivers/sensor_ir.h"
+#include "drivers/motor.h"
 #include "control/line_process.h"
 #include "control/pid.h"
 #include "control/lowpassfilter.h"
