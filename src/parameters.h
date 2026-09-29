@@ -1,5 +1,6 @@
 #ifndef __PARA__H
 #define __PARA__H
+
 #pragma once
 #include <stdint.h>
 

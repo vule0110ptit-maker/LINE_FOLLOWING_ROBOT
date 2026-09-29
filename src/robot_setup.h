@@ -1,7 +1,7 @@
 #ifndef __ROBOT__H
 #define __ROBOT__H
 #include <stdint.h>
-
+#pragma once
 // ===== Cảm biến =====
 constexpr uint8_t SENSOR_COUNT  = 8;
 constexpr bool    LINE_ADC_HIGH = false;   // true: ADC cao khi cảm biến nằm trên line

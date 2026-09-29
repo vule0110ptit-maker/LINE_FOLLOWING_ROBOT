@@ -1,6 +1,8 @@
 #ifndef __PIN__H
 #define __PIN__H
 
+
+#pragma once
 #include <stdint.h>
 #include "config/robot_setup.h"
 
