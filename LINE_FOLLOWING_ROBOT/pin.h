@@ -16,7 +16,7 @@ constexpr uint8_t PIN_MOTOR_L_IN2 = 17;
 constexpr uint8_t PIN_MOTOR_R_PWM = 18;
 constexpr uint8_t PIN_MOTOR_R_IN1 = 21;
 constexpr uint8_t PIN_MOTOR_R_IN2 = 47;
-
+constexpr uint8_t PIN_MOTOR_STBY  = 14;
 
 constexpr uint8_t PIN_BUTTON = 0;        // nút CHẠY/DỪNG hiện có, active LOW
 constexpr uint8_t PIN_LEARN_BUTTON = 10; // nút HỌC LINE mới, nối GPIO10 xuống GND
