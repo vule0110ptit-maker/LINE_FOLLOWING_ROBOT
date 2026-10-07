@@ -1,45 +1,122 @@
-# Xe dò line dùng ESP32-S3
+# LINE FOLLOWING ROBOT — ESP32-S3-DevKitC-1
 
-Xe đọc 8 cảm biến phản xạ analog, ước lượng vị trí line và điều khiển hai động cơ DC qua TB6612FNG. Vòng điều khiển chạy ở 500 Hz. Nút **HỌC LINE** hiệu chuẩn cảm biến; nút **CHẠY/DỪNG** bắt đầu hoặc dừng xe. Bản hiệu chuẩn hợp lệ được lưu trong NVS để dùng lại sau khi tắt nguồn.
+Xe dò line dùng **8 cảm biến analog**, **ESP32-S3-DevKitC-1** và driver **TB6612FNG**. Xe đọc cảm biến bằng **ADC continuous/DMA**, xử lý vị trí line và điều khiển hai bánh bằng **PD** ở nhịp **500 Hz**.
 
-**Bản mã được biên dịch** nằm trong [`src/LINE_FOLLOWING_ROBOT`](src/LINE_FOLLOWING_ROBOT). [`platformio.ini`](platformio.ini) đặt `src_dir = src/LINE_FOLLOWING_ROBOT`. Các file nằm trực tiếp dưới `src/` là bản khác và không được PlatformIO biên dịch trong cấu hình hiện tại.
+Cấu hình hiện tại:
+
+- **Cảm biến:** GPIO `4, 5, 6, 7, 8, 3, 9, 10`, cùng hàng **J1**, theo thứ tự từ trái sang phải trên xe.
+- **Motor và hai nút:** cùng hàng **J3**.
+- **CHẠY/DỪNG:** nút ngoài ở **GPIO47**.
+- **HỌC LINE:** nút ngoài ở **GPIO21**.
+- **STBY:** giữ HIGH bằng phần cứng, không sử dụng GPIO để điều khiển.
+
+“Học line” trong repo là **hiệu chuẩn min/max của từng cảm biến**. Xe chưa ghi nhớ lộ trình, chưa lập bản đồ và chưa có chức năng tránh vật cản.
 
 ## 1. Phần cứng cần có
 
-| Thành phần | Số lượng | Vai trò |
+| Thành phần | Số lượng | Yêu cầu / vai trò |
 |---|---:|---|
-| Bo ESP32-S3, cấu hình hiện tại là ESP32-S3 DevKitC-1 | 1 | Đọc ADC và điều khiển xe |
-| Cảm biến phản xạ có **8 đầu ra analog** | 1 dãy | Phát hiện line từ trái sang phải |
-| Driver động cơ TB6612FNG | 1 | Điều khiển hai động cơ DC |
-| Động cơ DC, bánh xe và khung xe | 2 động cơ | Di chuyển và rẽ bằng chênh lệch tốc độ hai bánh |
-| Nút nhấn HỌC LINE | 1 | Bắt đầu hiệu chuẩn; nút BOOT trên bo có thể dùng làm nút CHẠY/DỪNG |
-| Nguồn cho bo và động cơ, dây nối | Theo xe | Cấp nguồn theo thông số thực tế của bo, driver và động cơ |
+| ESP32-S3-DevKitC-1 | 1 | Đọc cảm biến và điều khiển xe |
+| Dãy cảm biến phản xạ analog | 8 mắt | Có 8 đầu ra analog riêng, đặt thành hàng ngang |
+| TB6612FNG | 1 module | Điều khiển hai motor DC |
+| Motor DC và bánh xe | 2 bộ | Một bên trái, một bên phải |
+| Khung xe và bánh tự do | Theo xe | Giữ cảm biến và hai bánh đúng vị trí |
+| Nút nhấn thường hở | 2 | Một nút CHẠY/DỪNG, một nút HỌC LINE |
+| Nguồn, bộ ổn áp và dây nối | Theo phần cứng | Cấp nguồn phù hợp cho bo, cảm biến và motor |
 
-Nối **GND chung** cho ESP32-S3, dãy cảm biến, driver và nguồn động cơ. Đầu ra analog đưa vào ESP32-S3 phải nằm trong mức điện áp an toàn của bo (**không quá 3,3 V**). Không nối động cơ trực tiếp vào GPIO. Repo không quy định loại cảm biến hay điện áp động cơ cụ thể; chọn nguồn theo phần cứng thực tế.
+Nối **GND chung** giữa ESP32, cảm biến, driver và nguồn motor. Cấp nguồn motor qua **VM của driver**; cấp nguồn logic TB6612FNG qua **VCC 3,3 V**. Đầu ra cảm biến đưa vào ESP32 không được vượt **3,3 V**. Không lấy GPIO làm nguồn cấp motor. Loại motor, cảm biến và điện áp VM cụ thể cần chọn theo linh kiện thực tế.
 
-### Bảng chân GPIO
+## 2. Sơ đồ GPIO và cách đấu dây
 
-Các chân được khai báo trong [`pin.h`](src/LINE_FOLLOWING_ROBOT/pin.h). `IR[0]` là mắt **trái nhất** khi nhìn theo hướng xe chạy.
+Chân được khai báo trong [`src/LINE_FOLLOWING_ROBOT/pin.h`](src/LINE_FOLLOWING_ROBOT/pin.h). Hàng J1/J3 và số vị trí dưới đây theo [sơ đồ ESP32-S3-DevKitC-1 của Espressif](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide_v1.0.html#header-block).
 
-| Chức năng | GPIO ESP32-S3 | Nối tới |
-|---|---:|---|
-| IR[0], IR[1], IR[2], IR[3] | 1, 2, 3, 4 | Bốn đầu ra analog từ trái vào giữa |
-| IR[4], IR[5], IR[6], IR[7] | 5, 6, 7, 8 | Bốn đầu ra analog từ giữa sang phải |
-| `PIN_MOTOR_L_PWM` | 15 | PWM kênh driver nối động cơ trái |
-| `PIN_MOTOR_L_IN1` / `PIN_MOTOR_L_IN2` | 16 / 17 | Hai chân chọn chiều động cơ trái |
-| `PIN_MOTOR_R_PWM` | 18 | PWM kênh driver nối động cơ phải |
-| `PIN_MOTOR_R_IN1` / `PIN_MOTOR_R_IN2` | 21 / 47 | Hai chân chọn chiều động cơ phải |
-| `PIN_MOTOR_STBY` | 14 | STBY của TB6612FNG |
-| `PIN_BUTTON` | 0 | Nút CHẠY/DỪNG: nhấn để nối GPIO0 xuống GND |
-| `PIN_LEARN_BUTTON` | 10 | Nút HỌC LINE: nhấn để nối GPIO10 xuống GND |
+**GPIO và số vị trí trên header là hai số khác nhau.** Đấu dây theo nhãn GPIO in trên bo và đối chiếu sơ đồ đúng chiều.
 
-Hai nút dùng `INPUT_PULLUP`; không cần điện trở kéo lên bên ngoài nếu đấu như bảng. **Thả nút GPIO0 khi cấp nguồn hoặc reset** vì đây là chân BOOT của ESP32-S3. Mã kéo STBY xuống LOW trong lúc khởi tạo motor, sau đó đưa lên HIGH khi PWM sẵn sàng. Khi chạy, dừng hoặc phanh, mã điều khiển bằng PWM và các chân IN; STBY vẫn HIGH.
+### 2.1. Tám cảm biến — hàng J1
 
-## 2. Nạp mã và sử dụng xe
+| Mắt cảm biến trên xe | Tên trong code | GPIO | Hàng / vị trí |
+|---|---|---:|---|
+| Trái nhất | `IR[0]` | 4 | J1 / 4 |
+| Thứ 2 từ trái | `IR[1]` | 5 | J1 / 5 |
+| Thứ 3 từ trái | `IR[2]` | 6 | J1 / 6 |
+| Thứ 4 từ trái | `IR[3]` | 7 | J1 / 7 |
+| Thứ 5 từ trái | `IR[4]` | 8 | J1 / 12 |
+| Thứ 6 từ trái | `IR[5]` | 3 | J1 / 13 |
+| Thứ 7 từ trái | `IR[6]` | 9 | J1 / 15 |
+| Phải nhất | `IR[7]` | 10 | J1 / 16 |
 
-Mã dùng Arduino-ESP32 3.x với các chức năng ADC continuous, LEDC và `Preferences`/NVS. Không cần cài thư viện cảm biến hay driver motor riêng.
+```cpp
+constexpr uint8_t IR_PINS[SENSOR_COUNT] = {4, 5, 6, 7, 8, 3, 9, 10};
+```
 
-Với PlatformIO, chạy tại thư mục chứa README này:
+Cả 8 chân đều thuộc **ADC1**. Arduino-ESP32 `analogContinuous()` chỉ hỗ trợ ADC1, theo [tài liệu ADC chính thức](https://docs.espressif.com/projects/arduino-esp32/en/latest/api/adc.html#example-applications). Vì vậy, giữ bộ chân này khi dùng cách đọc hiện tại. GPIO15–18 thuộc ADC2; bộ `4, 5, 6, 7, 15, 16, 17, 18` không phù hợp nếu chỉ thay mảng chân mà giữ nguyên module ADC.
+
+`IR[0]` phải nối đúng mắt trái nhất; thứ tự trong mảng không phải thứ tự tăng dần của số GPIO. GPIO3 là chân strapping liên quan lựa chọn JTAG.
+
+### 2.2. Hai motor — hàng J3
+
+Ví dụ nối motor trái vào kênh A, motor phải vào kênh B của TB6612FNG:
+
+| Chức năng | Hằng số trong code | GPIO | Hàng / vị trí | Chân TB6612FNG |
+|---|---|---:|---|---|
+| PWM motor trái | `PIN_MOTOR_L_PWM` | 1 | J3 / 4 | PWMA |
+| Chiều motor trái 1 | `PIN_MOTOR_L_IN1` | 2 | J3 / 5 | AIN1 |
+| Chiều motor trái 2 | `PIN_MOTOR_L_IN2` | 42 | J3 / 6 | AIN2 |
+| PWM motor phải | `PIN_MOTOR_R_PWM` | 41 | J3 / 7 | PWMB |
+| Chiều motor phải 1 | `PIN_MOTOR_R_IN1` | 40 | J3 / 8 | BIN1 |
+| Chiều motor phải 2 | `PIN_MOTOR_R_IN2` | 39 | J3 / 9 | BIN2 |
+
+Motor trái nối hai đầu ra kênh A; motor phải nối hai đầu ra kênh B. Kiểm tra trên xe để lệnh dương làm cả hai bánh đẩy xe tiến. Nếu một bánh quay ngược, đổi hai dây của motor đó.
+
+GPIO39–42 đang dùng cho motor nên không dùng JTAG ngoài trên các chân này. UART GPIO43/44 và USB GPIO19/20 không được dùng cho cảm biến, motor hoặc nút trong cấu hình hiện tại.
+
+### 2.3. Hai nút — hàng J3
+
+| Chức năng | Hằng số | GPIO | Hàng / vị trí | Cách đấu |
+|---|---|---:|---|---|
+| CHẠY/DỪNG | `PIN_BUTTON` | 47 | J3 / 17 | Nút nối GPIO47 xuống GND khi nhấn |
+| HỌC LINE | `PIN_LEARN_BUTTON` | 21 | J3 / 18 | Nút nối GPIO21 xuống GND khi nhấn |
+
+Hai nút dùng `INPUT_PULLUP`: thả nút = HIGH, nhấn = LOW. Không cần điện trở kéo lên ngoài. **Nút BOOT GPIO0 trên bo không dùng để chạy/dừng xe trong cấu hình này.**
+
+Trên biến thể ESP32-S3-WROOM-2, GPIO47 làm việc ở mức 1,8 V, theo [datasheet Espressif](https://documentation.espressif.com/esp32-s3-wroom-2_datasheet_en.html). Giữ cách đấu nút xuống GND và kéo lên nội; không kéo GPIO47 lên 3,3 V bên ngoài.
+
+### 2.4. STBY của TB6612FNG
+
+Nối **STBY lên VCC logic 3,3 V** nếu module chưa có kéo lên sẵn. Nếu dùng dây cũ, tháo kết nối STBY với GPIO14. Không nối STBY vào nguồn motor VM.
+
+Code điều khiển chạy, dừng và phanh bằng PWM cùng các chân IN. GPIO14 hiện không được dùng.
+
+## 3. Mã nguồn và môi trường nạp
+
+**Bản đang được PlatformIO chọn nằm trong [`src/LINE_FOLLOWING_ROBOT`](src/LINE_FOLLOWING_ROBOT).** `platformio.ini` đặt:
+
+```ini
+[platformio]
+src_dir = src/LINE_FOLLOWING_ROBOT
+```
+
+Các file nằm trực tiếp dưới `src/` là bản khác; chúng không được biên dịch với cấu hình này. Khi chỉnh thông số xe, sửa các file trong thư mục đang được chọn.
+
+| File / nhóm file | Vai trò |
+|---|---|
+| `LINE_FOLLOWING_ROBOT.ino` | Khởi động xe, chạy tác vụ điều khiển và in Serial |
+| `pin.h` | Danh sách GPIO cảm biến, motor và nút |
+| `robot_setup.h` | Số mắt, cực tính cảm biến, ADC, PWM, tần số điều khiển |
+| `parameters.h` | Tốc độ, PD, ngưỡng nhận line, hiệu chuẩn, tìm line và mốc vòng |
+| `adc_dma.cpp`, `sensor_ir.cpp` | Thu ADC, lọc mẫu, chuẩn hóa và học min/max |
+| `calibration_store.cpp` | Đọc/ghi hiệu chuẩn trong NVS bằng `Preferences` |
+| `line_process.cpp` | Tạo mặt nạ line, tách vùng và tính vị trí |
+| `pid.cpp`, `lowpassfilter.cpp` | Bộ điều khiển PD và bộ lọc |
+| `control_task.cpp`, `timer.cpp` | Nhịp 500 Hz, đọc nút, xử lý dữ liệu và điều phối |
+| `fsm.cpp`, `states.cpp`, `marker_tracker.cpp` | Trạng thái xe và nhận mốc đếm vòng |
+| `motor.cpp` | Xuất PWM, chọn chiều và phanh hai motor |
+
+Mã dùng API **Arduino-ESP32 3.x**: ADC continuous, `ledcAttach()` và timer. `Preferences` có trong bộ Arduino-ESP32; không cần thêm thư viện driver motor hoặc cảm biến riêng. Nếu dùng PlatformIO, môi trường phải cung cấp core tương thích; dòng `platform = espressif32` hiện không khóa phiên bản core.
+
+### Nạp bằng PlatformIO
+
+Chạy tại thư mục gốc của repo:
 
 ```bash
 pio run
@@ -47,37 +124,131 @@ pio run -t upload
 pio device monitor -b 115200
 ```
 
-Cũng có thể mở [`LINE_FOLLOWING_ROBOT.ino`](src/LINE_FOLLOWING_ROBOT/LINE_FOLLOWING_ROBOT.ino) bằng Arduino IDE, chọn bo ESP32-S3 và Arduino-ESP32 3.x. Serial Monitor dùng **115200 baud**.
+### Nạp bằng Arduino IDE
 
-1. **Kiểm tra lần đầu:** kê bánh xe khỏi mặt đất, kiểm tra nguồn, GND chung, chiều quay hai bánh và thứ tự 8 mắt IR. Khi khởi động thành công, Serial in `INIT=OK ESP32-S3`.
-2. **Học line:** đặt xe để lúc tự xoay, **mỗi cảm biến** lần lượt nhìn thấy cả line và nền. Nhấn nút HỌC LINE ở GPIO10. Xe xoay quét khoảng 3 giây. `CAL=SAVED_NVS` nghĩa là đã lưu hiệu chuẩn; `CAL=INVALID KEEP_PREVIOUS` nghĩa là ít nhất một mắt chưa quét đủ tương phản và bản cũ được giữ. Nhấn CHẠY trong lúc học để hủy lượt học.
-3. **Chạy:** đặt dãy cảm biến lên line và nhấn nút CHẠY ở GPIO0. Xe chỉ vào `FOLLOW` khi đã có hiệu chuẩn hợp lệ và đang thấy line. Nếu không, Serial báo `RUN=BLOCKED LEARN_LINE_FIRST` hoặc `RUN=BLOCKED PLACE_ON_LINE`.
-4. **Dừng hoặc chạy lại:** khi đang `FOLLOW` hoặc `LOST`, nhấn CHẠY để dừng. Ở `STOP`, có thể nhấn HỌC để hiệu chuẩn lại hoặc nhấn CHẠY để chạy tiếp khi đủ điều kiện.
+Mở [`LINE_FOLLOWING_ROBOT.ino`](src/LINE_FOLLOWING_ROBOT/LINE_FOLLOWING_ROBOT.ino), dùng Arduino-ESP32 3.x, chọn bo ESP32-S3 tương ứng và cổng nạp. Cấu hình USB CDC phù hợp khi dùng cổng USB trực tiếp của ESP32; cấu hình PlatformIO hiện bật `ARDUINO_USB_CDC_ON_BOOT=1`. Serial Monitor dùng **115200 baud**.
 
-Khi bật nguồn, `CAL=LOADED_NVS` cho biết đã nạp hiệu chuẩn đã lưu; `CAL=DEFAULT PRESS_LEARN` cho biết cần học line. Nếu mặt sân, độ cao cảm biến hoặc dãy cảm biến thay đổi, nên học lại. `CAL=RAM_ONLY NVS_WRITE_FAILED` nghĩa là lượt học dùng được trong RAM nhưng không lưu được vào flash.
+## 4. Cách sử dụng xe
 
-### Cách xe hoạt động
+### 4.1. Kiểm tra và bật nguồn
+
+1. Kiểm tra nguồn, GND chung, STBY và toàn bộ dây theo bảng GPIO.
+2. Kê bánh xe khỏi mặt đất khi kiểm tra chiều quay lần đầu.
+3. Bật nguồn và mở Serial Monitor. Khởi động thành công hiển thị `INIT=OK ESP32-S3`.
+4. `CAL=LOADED_NVS` nghĩa là có hiệu chuẩn đã lưu; `CAL=DEFAULT PRESS_LEARN` nghĩa là cần học line.
+
+Xe khởi động ở `IDLE`, chờ nút; không tự chạy khi bật nguồn. Nút bị giữ lúc khởi động không được tính là một lần nhấn mới.
+
+### 4.2. Học line — GPIO21
+
+1. Đặt xe trên vùng line/nền sao cho khi xoay, **từng mắt trong cả 8 mắt** đều có thể thấy cả hai bề mặt.
+2. Nhấn rồi thả nút HỌC LINE. Xe xoay quét hai phía trong khoảng **3 giây**.
+3. Chờ xe dừng và xem kết quả Serial:
+
+| Thông báo | Ý nghĩa |
+|---|---|
+| `CAL=SAVED_NVS` | Hiệu chuẩn hợp lệ, đã lưu vào flash |
+| `CAL=RAM_ONLY NVS_WRITE_FAILED` | Hiệu chuẩn dùng được trong lần bật nguồn này, nhưng chưa lưu thành công |
+| `CAL=INVALID KEEP_PREVIOUS` | Ít nhất một mắt thiếu tương phản; giữ hiệu chuẩn trước đó nếu có |
+| `CAL=CANCELLED` | Đã hủy lượt học bằng nút CHẠY/DỪNG |
+
+Cả 8 mắt phải có chênh lệch min/max ít nhất `CALIB_MIN_RANGE`, mặc định **300 đơn vị ADC**. Nếu muốn quét bằng tay, đặt `CALIB_SPIN_SPEED = 0`, nạp lại rồi đưa từng mắt qua line và nền trong thời gian học.
+
+**Cần học lại** khi đổi danh sách/thứ tự GPIO cảm biến, thay cảm biến hoặc thay điều kiện mặt sân/độ cao lắp đặt. Bản NVS khác danh sách GPIO sẽ bị từ chối. **Chỉ đổi GPIO của nút hoặc motor không làm bản hiệu chuẩn bị từ chối.**
+
+### 4.3. Chạy và dừng — GPIO47
+
+1. Đặt dãy cảm biến lên line.
+2. Nhấn rồi thả nút CHẠY/DỪNG để bắt đầu bám line.
+3. Khi xe đang chạy hoặc tìm line, nhấn lại để dừng.
+4. Sau khi dừng, có thể nhấn CHẠY để chạy tiếp khi đủ điều kiện hoặc nhấn HỌC để hiệu chuẩn lại.
+
+Xe chỉ bắt đầu chạy khi có **hiệu chuẩn hợp lệ** và **đang thấy line**. Nếu chưa đủ điều kiện, Serial báo `RUN=BLOCKED LEARN_LINE_FIRST` hoặc `RUN=BLOCKED PLACE_ON_LINE`.
+
+Mỗi lần bắt đầu chạy bằng nút, bộ đếm mốc/vòng được đặt lại.
+
+## 5. Cách xe hoạt động
 
 ```text
-8 cảm biến IR → ADC → chuẩn hóa 0..1000 → tìm vùng/vị trí line
-               → bộ điều khiển PD → PWM và chiều quay hai motor
+8 đầu ra analog
+    → ADC continuous/DMA trên ADC1
+    → trung bình mẫu và chuẩn hóa từng mắt về 0..1000
+    → nhận line bằng hai ngưỡng bật/tắt
+    → tách các vùng line liên tiếp, chọn một vùng
+    → tính trọng tâm vị trí -1..+1 và lọc
+    → bộ điều khiển PD
+    → PWM và chiều quay hai motor
 ```
 
-- **Bám line:** xe dùng trọng tâm của vùng line được chọn để tăng/giảm lệnh hai bánh. Line càng lệch tâm, tốc độ nền càng giảm.
-- **Hai nhánh rời nhau:** `BRANCH_CHOICE` chọn vùng trái, phải hoặc vùng gần vị trí line trước đó. Đây là lựa chọn tại chỗ, **không phải học thuộc lộ trình của map**.
-- **Khoảng line đứt:** nếu line vừa ở gần giữa dãy cảm biến, xe đi thẳng chậm tối đa 80 ms để thử vượt khoảng trống. Nếu line mất lâu hơn hoặc mất khi đang lệch nhiều, xe vào `LOST`, quay tìm line tối đa 1,5 giây rồi dừng nếu vẫn không thấy.
-- **Vạch ngang và số vòng:** mặc định tính năng nhận mốc đang **tắt** (`LAP_MARKER_PATTERN = Disabled`), nên vùng line rộng không tự làm xe dừng. Có thể cấu hình mốc một hoặc hai vạch và số vòng cần chạy trong `parameters.h`. Vùng rộng, giao lộ và vạch đích có thể cho cùng mẫu cảm biến; mốc đích cần đủ đặc trưng trên sân thực tế.
-- **ADC quá hạn:** nếu không có khung ADC mới quá 100 ms, xe phanh và chuyển `STOP`; nút bấm chỉ được nhận lại khi dữ liệu ADC đã cập nhật.
+ADC thu mẫu ở nền; callback báo có khung mới. Timer đặt nhịp điều khiển **2 ms**, còn xử lý cảm biến, PD và motor diễn ra trong tác vụ điều khiển. Log giám sát được bỏ qua khi bộ đệm Serial thiếu chỗ.
 
-Serial in mỗi 100 ms một dòng như sau:
+Giá trị chuẩn hóa **1000** biểu thị tín hiệu line mạnh; **0** biểu thị nền. Mặc định `LINE_ADC_HIGH = false`, nghĩa là ADC thô thấp được hiểu là line. Vị trí âm nằm bên trái, dương nằm bên phải.
+
+Khi thấy line, lệnh motor được tính như sau:
+
+```text
+base  = BASE_SPEED - SPEED_DROP × |vị trí đã lọc|
+steer = PD(vị trí đã lọc)
+left  = base + steer
+right = base - steer
+```
+
+Mỗi lệnh motor được giới hạn trong `[-1, +1]`: dấu chọn chiều, độ lớn chọn duty PWM. Đây là lệnh điều khiển, không phải tốc độ bánh đo bằng encoder.
+
+### Trạng thái xe
+
+| Trạng thái | Hoạt động |
+|---|---|
+| `IDLE` | Chờ nút sau khi bật nguồn |
+| `CALIBRATE` / Serial `LEARN` | Xoay quét và lấy min/max cảm biến |
+| `READY` | Dừng, chờ chạy hoặc học lại |
+| `FOLLOW` | Bám line bằng PD |
+| `LOST` | Xoay tìm lại line |
+| `STOP` | Phanh điện mặc định 300 ms, sau đó đưa lệnh motor về 0 |
+
+`GAP` là nhãn Serial khi đang `FOLLOW` nhưng tạm không thấy line, không phải một trạng thái riêng. `ADC_FAULT` là nhãn báo dữ liệu ADC không còn mới.
+
+### Các tình huống trên map
+
+| Tình huống | Cách xử lý hiện tại |
+|---|---|
+| Line thẳng hoặc cong | Tính vị trí line, điều chỉnh chênh lệnh hai bánh; giảm tốc nền theo độ lệch |
+| Hai hoặc nhiều vùng line rời nhau | `Keep` chọn vùng gần vị trí trước đó; bằng nhau thì chọn trái. Có thể cấu hình `Left` / `Right` |
+| Line đứt ngắn khi vừa ở gần giữa | Đi thẳng với `GAP_SPEED = 0.20` trong khoảng tối đa 80 ms |
+| Mất line khi lệch nhiều hoặc hết thời gian vượt khoảng đứt | Chuyển `LOST`, tìm về phía cuối thấy line trước rồi đổi hướng quét |
+| Tìm lại được line | Trở về `FOLLOW`, đặt lại bộ điều khiển/lọc |
+| Tìm không được line sau 1,5 giây trong `LOST` | Chuyển `STOP` |
+| Vùng line rộng, giao lộ hoặc vạch ngang | Báo `crossing` khi ít nhất 7 mắt thấy line; mặc định chưa bật nhận mốc nên không tự dừng vì vùng rộng |
+| Mốc vòng hợp lệ khi đã bật nhận mốc | Tăng số vòng và dừng khi đạt `TARGET_LAPS` |
+| Không có ADC mới quá 100 ms | Dừng/phanh theo trạng thái; nút chỉ được xử lý lại khi dữ liệu ADC mới trở lại |
+
+Xe quyết định dựa trên tín hiệu ngay dưới dãy cảm biến. Giao lộ, vạch đích và vùng màu rộng có thể cho mẫu giống nhau; cần thiết kế mốc phù hợp nếu dùng đếm vòng. Bảng mô tả xử lý của code; khả năng vượt cua hoặc khoảng đứt thực tế còn phụ thuộc tốc độ và cơ khí.
+
+### Đọc Serial
+
+Mỗi khoảng 100 ms có bản tin giám sát:
 
 ```text
 IR=00011000 state=FOLLOW move=FORWARD L=+0.45 R=+0.45 sg=1
 ```
 
-`IR` gồm 8 bit trái → phải; `1` là cảm biến được đánh dấu đang trên line. `sg` là số vùng line rời nhau. `L/R` là **lệnh motor chuẩn hóa**, không phải tốc độ bánh đo được. `GAP` chỉ là nhãn hiển thị khi xe tạm mất line trong `FOLLOW`, không phải trạng thái riêng. Mỗi giây có thêm dòng `HEALTH adc=OK cal=OK ovr_1s=0 lap=0`. `ovr_1s` là số nhịp điều khiển bị lỡ trong giây vừa qua.
+| Trường | Ý nghĩa |
+|---|---|
+| `IR` | 8 bit theo thứ tự mắt trái → phải; `1` là mắt được nhận đang trên line |
+| `state` | Trạng thái hoặc nhãn giám sát |
+| `move` | Suy ra từ lệnh motor: tiến, lùi, rẽ, xoay, phanh hoặc đứng yên |
+| `L`, `R` | Lệnh motor trái/phải chuẩn hóa |
+| `sg` | Số vùng line rời nhau |
 
-## 3. Các thông số có thể thay đổi
+Mỗi giây có thêm bản tin:
+
+```text
+HEALTH adc=OK cal=OK ovr_1s=0 lap=0
+```
+
+`adc` báo độ mới dữ liệu, `cal` báo hiệu chuẩn hợp lệ, `ovr_1s` là số nhịp điều khiển bị lỡ trong giây vừa qua và `lap` là số vòng đã đếm. Log có thể bị bỏ qua khi Serial đầy.
+
+## 6. Các thông số có thể thay đổi
 
 Thông số chạy xe nằm trong [`parameters.h`](src/LINE_FOLLOWING_ROBOT/parameters.h). Chúng là hằng số lúc biên dịch: **sửa file, biên dịch và nạp lại** mới có tác dụng. Giá trị tốc độ từ 0 đến 1 là mức lệnh PWM tương đối; tốc độ thực còn tùy nguồn, động cơ, bánh và mặt sân.
 
@@ -139,16 +310,57 @@ Thông số chạy xe nằm trong [`parameters.h`](src/LINE_FOLLOWING_ROBOT/para
 
 ### Cấu hình phần cứng ít khi cần đổi
 
-[`robot_setup.h`](src/LINE_FOLLOWING_ROBOT/robot_setup.h) chứa `SENSOR_COUNT = 8`, cực tính `LINE_ADC_HIGH = false` (ADC **thấp** được hiểu là line), cấu hình ADC `40000 Hz` tổng/`10` chuyển đổi mỗi chân/đệm `16`/trung bình `8` mẫu, PWM `20000 Hz` ở `10 bit` và vòng điều khiển `500 Hz`. Chỉ đổi `LINE_ADC_HIGH` sau khi kiểm tra tín hiệu cảm biến trên line và nền. Nếu đổi cực tính hoặc mặt sân, học line lại.
+Các hằng số sau nằm trong [`robot_setup.h`](src/LINE_FOLLOWING_ROBOT/robot_setup.h):
 
-`ADC_RING_SIZE` phải là lũy thừa của 2. `PWM_MAX_DUTY` và `CONTROL_PERIOD_US` được tính từ độ phân giải PWM và tần số điều khiển, nên không cần sửa riêng. `SENSOR_COUNT` và thứ tự `IR_PINS` phải khớp phần cứng; mã nhận diện hiện dùng mặt nạ 8 bit. Các chân GPIO trong [`pin.h`](src/LINE_FOLLOWING_ROBOT/pin.h) chỉ nên đổi khi đấu dây thực tế khác. STBY GPIO14 là chân bật driver lúc khởi tạo, **không phải tham số tăng tốc xe**.
+| Thông số | Mặc định | Vai trò |
+|---|---:|---|
+| `SENSOR_COUNT` | `8` | Số mắt cảm biến; thuật toán hiện dùng mặt nạ 8 bit |
+| `LINE_ADC_HIGH` | `false` | ADC thô thấp được hiểu là line; `true` khi ADC cao trên line |
+| `ADC_SAMPLE_FREQ_HZ` | `40000 Hz` | Tần số chuyển đổi tổng của 8 kênh, tương đương 5000 chuyển đổi/giây/kênh |
+| `ADC_CONV_PER_PIN` | `10` | Số chuyển đổi mỗi chân được driver lấy trung bình trong một khung |
+| `ADC_RING_SIZE` | `16` | Số mẫu trung bình gần nhất lưu cho mỗi mắt; phải là lũy thừa của 2 |
+| `ADC_AVG_SAMPLES` | `8` | Số mẫu trong bộ đệm dùng để lấy trung bình khi đọc |
+| `ADC_MAX_GPIO` | `48` | Giới hạn chỉ số bảng tra GPIO, không phải cho phép mọi GPIO đọc ADC |
+| `PWM_FREQ_HZ` | `20000 Hz` | Tần số PWM motor |
+| `PWM_RES_BITS` | `10 bit` | Độ phân giải PWM |
+| `PWM_MAX_DUTY` | `1023` | Tính từ độ phân giải PWM, không cần sửa riêng |
+| `CONTROL_FREQ_HZ` | `500 Hz` | Tần số tác vụ điều khiển |
+| `CONTROL_PERIOD_US` | `2000 µs` | Tính từ tần số điều khiển, không cần sửa riêng |
 
-## 4. Thứ tự chỉnh xe trên sân
+Chỉ đổi `LINE_ADC_HIGH` sau khi kiểm tra tín hiệu cảm biến trên line và nền. Nếu đổi cực tính hoặc mặt sân, học line lại. Đổi tần số ADC, PWM hoặc điều khiển cần kiểm tra lại giới hạn API, thời gian xử lý và phản ứng của xe.
 
-1. Xác nhận dây, GND chung, chiều quay motor và thứ tự 8 cảm biến; kê bánh khỏi mặt đất khi thử lần đầu.
-2. Học line và kiểm tra `IR=xxxxxxxx`: đưa từng mắt lên line/nền để xác nhận đúng cực tính. Nếu bị đảo, sửa `LINE_ADC_HIGH` rồi học lại.
-3. Chạy chậm bằng cách giảm `BASE_SPEED`; sau đó chỉnh `PD_KP`, `PD_KD` và `SPEED_DROP`, mỗi lần chỉ đổi một nhóm.
-4. Khi bám line liên tục ổn, mới chỉnh thông số vượt khoảng đứt, tìm line và chọn nhánh theo sân thật.
-5. Chỉ bật đếm vòng sau khi xác định được mốc đích có mẫu riêng, không trùng giao lộ hoặc ô màu rộng.
+`ADC_RING_SIZE` phải là lũy thừa của 2. `PWM_MAX_DUTY` và `CONTROL_PERIOD_US` được tính từ độ phân giải PWM và tần số điều khiển, nên không cần sửa riêng. `SENSOR_COUNT` và thứ tự `IR_PINS` phải khớp phần cứng; mã nhận diện hiện dùng mặt nạ 8 bit. Các chân GPIO trong [`pin.h`](src/LINE_FOLLOWING_ROBOT/pin.h) chỉ nên đổi khi đấu dây thực tế khác. GPIO14 đã được giải phóng vì STBY được giữ HIGH bằng phần cứng.
 
-Xe chưa có cảm biến tránh vật cản và chưa ghi nhớ lộ trình của map. Việc “học line” ở đây là **hiệu chuẩn min/max phản xạ của 8 cảm biến**, không phải học đường đi.
+## 7. Trình tự chỉnh xe trên sân
+
+1. Kiểm tra dây, chiều quay motor và thứ tự mắt IR.
+2. Học line; đưa từng mắt qua line/nền để kiểm tra bit `IR` tương ứng. Nếu cực tính bị đảo, sửa `LINE_ADC_HIGH`, nạp lại và học lại.
+3. Giảm `BASE_SPEED` để thử chậm. Chỉnh `PD_KP`, `PD_KD` và `SPEED_DROP`, mỗi lần thay ít thông số để quan sát nguyên nhân.
+4. Sau khi bám line liên tục ổn, chỉnh thời gian vượt khoảng đứt, tốc độ tìm line và chọn nhánh theo sân thực tế.
+5. Bật đếm vòng sau khi đã có mốc phù hợp và kiểm tra được mốc không trùng giao lộ.
+
+Các tùy chọn enum phải viết đúng kiểu trong code, ví dụ:
+
+```cpp
+constexpr BranchChoice BRANCH_CHOICE = BranchChoice::Left;
+constexpr MarkerPattern LAP_MARKER_PATTERN = MarkerPattern::DoubleBar;
+```
+
+## 8. Xử lý lỗi thường gặp
+
+| Hiện tượng / thông báo | Kiểm tra |
+|---|---|
+| `INIT=FAILED MOTOR_PWM_OR_ADC` | Core Arduino tương thích API, danh sách GPIO ADC1, khởi tạo PWM/ADC; không tiếp tục chạy xe |
+| `RUN=BLOCKED LEARN_LINE_FIRST` | Thực hiện lượt học hợp lệ cho cả 8 mắt |
+| `RUN=BLOCKED PLACE_ON_LINE` | Đặt cảm biến lên line, kiểm tra cực tính và thứ tự mắt |
+| `CAL=INVALID KEEP_PREVIOUS` | Từng mắt phải quét đủ line/nền; kiểm tra chiều cao, đầu ra analog và tương phản |
+| `CAL=RAM_ONLY NVS_WRITE_FAILED` | Kiểm tra khả năng ghi NVS; hiệu chuẩn chưa được bảo đảm lưu qua lần tắt nguồn |
+| `IR=-------- state=ADC_FAULT move=STILL` hoặc `adc=STALE` | Kiểm tra dữ liệu ADC, khởi tạo và bộ chân cảm biến |
+| Nhấn nút không có phản ứng | GPIO47/21 phải nối xuống GND khi nhấn; kiểm tra ADC có đang `STALE` hay không |
+| Motor không quay | Nguồn VM, GND chung, STBY HIGH, dây motor và bản tin lệnh `L/R` |
+| Xe đánh lái ngược | Kiểm tra thứ tự mắt trái → phải và chiều quay từng motor |
+| Xe lắc khi bám line | Giảm tốc, kiểm tra hiệu chuẩn rồi chỉnh PD/lọc |
+| `ovr_1s` tăng thường xuyên | Tác vụ điều khiển đang lỡ nhịp; kiểm tra phần xử lý hoặc log được thêm vào |
+| PlatformIO báo thiếu `resultcallback` | Lỗi tương thích PlatformIO/Click trong môi trường Python; cần sửa bộ công cụ trước khi build |
+
+README mô tả cấu hình và hành vi của mã nguồn hiện tại. Thử nghiệm trên xe thực tế vẫn cần để xác nhận dây, chiều motor và thông số chạy phù hợp.
