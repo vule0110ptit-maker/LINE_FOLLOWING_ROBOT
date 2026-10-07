@@ -37,9 +37,6 @@ inline void brake(Channel &c) {
 }  // namespace
 
 bool motor_init() {
-    pinMode(PIN_MOTOR_STBY, OUTPUT);
-    digitalWrite(PIN_MOTOR_STBY, LOW);  // giữ driver tắt đến khi PWM và chiều quay sẵn sàng
-
     Channel *chs[2] = {&chL, &chR};
     bool pwmReady = true;
     for (Channel *c : chs) {
@@ -47,11 +44,14 @@ bool motor_init() {
         pinMode(c->in2, OUTPUT);
         digitalWrite(c->in1, LOW);
         digitalWrite(c->in2, LOW);
-        if (!ledcAttach(c->pwm, PWM_FREQ_HZ, PWM_RES_BITS)) pwmReady = false;
+        if (ledcAttach(c->pwm, PWM_FREQ_HZ, PWM_RES_BITS)) {
+            ledcWrite(c->pwm, 0);
+        } else {
+            pwmReady = false;
+        }
     }
     if (!pwmReady) return false;
     motor_stop();
-    digitalWrite(PIN_MOTOR_STBY, HIGH);
     return true;
 }
 
