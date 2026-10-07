@@ -6,7 +6,7 @@
 #include "sensor_ir.h"
 #include "states.h"
 #include "timer.h"
-
+#include "pin.h"
 // Sketch chính chỉ khởi động và giám sát. ADC, thuật toán bám line và motor
 // chạy trong control_task.cpp / states.cpp ở nhịp 500 Hz.
 static void write_if_room(const char *msg, int len) {
