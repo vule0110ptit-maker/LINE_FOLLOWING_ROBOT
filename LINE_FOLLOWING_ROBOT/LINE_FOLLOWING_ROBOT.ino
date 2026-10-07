@@ -2,11 +2,12 @@
 #include <stdio.h>
 #include "control_task.h"
 #include "motor.h"
+#include "pin.h"
 #include "parameters.h"
 #include "sensor_ir.h"
 #include "states.h"
 #include "timer.h"
-#include "pin.h"
+
 // Sketch chính chỉ khởi động và giám sát. ADC, thuật toán bám line và motor
 // chạy trong control_task.cpp / states.cpp ở nhịp 500 Hz.
 static void write_if_room(const char *msg, int len) {
@@ -82,7 +83,7 @@ static void print_health() {
 void setup() {
     Serial.begin(115200);
     if (!control_task_init()) {
-        // motor_init đã giữ STBY LOW nếu PWM lỗi; nếu ADC lỗi thì PWM đang ở 0.
+        // Các kênh PWM khởi tạo được đã được đặt về 0; chân hướng ở LOW.
         Serial.println("INIT=FAILED MOTOR_PWM_OR_ADC");
         while (true) delay(1000);
     }
@@ -101,7 +102,7 @@ void loop() {
     const uint32_t now = millis();
     if (now - lastHealth >= 1000) {
         lastHealth = now;
-        print_health();
+        print_health(); 
     }
     if (now - lastPrint >= 100) {
         lastPrint = now;
