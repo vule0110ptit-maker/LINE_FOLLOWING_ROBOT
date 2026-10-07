@@ -88,7 +88,8 @@ void setup() {
     }
     Serial.println("INIT=OK ESP32-S3");
     Serial.println(sensor_calib_loaded() ? "CAL=LOADED_NVS" : "CAL=DEFAULT PRESS_LEARN");
-    Serial.println("GPIO10: HOC LINE | GPIO0: CHAY/DUNG | IR: trai -> phai, 1 = tren line");
+    Serial.printf("GPIO%u: HOC LINE | GPIO%u: CHAY/DUNG | IR: trai -> phai, 1 = tren line\n",
+                  (unsigned)PIN_LEARN_BUTTON, (unsigned)PIN_BUTTON);
 }
 
 void loop() {
